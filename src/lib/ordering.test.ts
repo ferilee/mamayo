@@ -36,15 +36,19 @@ describe('ordering domain', () => {
     const makeOrder = (id: string, createdAt: string, status: 'completed' | 'pending', whatsapp: string, total: number): Order => ({
       id, code: id, createdAt, customerName: 'Test', whatsapp, pickupTime: '12.00', items: [{ itemId: 'test', name: 'Menu test', price: total, quantity: 1 }], subtotal: total, total, paymentMethod: 'cash', paymentStatus: 'not_required', status,
     })
+    const orderAt = (hour: number) => new Date(2026, 8, 2, hour).toISOString()
     const analytics = getSalesAnalytics([
-      makeOrder('today-1', '2026-09-02T03:00:00.000Z', 'completed', '081234567890', 15000),
-      makeOrder('today-2', '2026-09-02T05:00:00.000Z', 'completed', '+6281234567890', 15000),
-      makeOrder('today-3', '2026-09-02T06:00:00.000Z', 'pending', '089999999999', 20000),
+      makeOrder('today-1', orderAt(3), 'completed', '081234567890', 15000),
+      makeOrder('today-2', orderAt(5), 'completed', '+6281234567890', 15000),
+      makeOrder('today-3', orderAt(6), 'pending', '089999999999', 20000),
     ], 'daily', today)
     expect(analytics.completedOrders).toBe(2)
     expect(analytics.revenue).toBe(30000)
     expect(analytics.uniqueCustomers).toBe(1)
     expect(analytics.returningCustomers).toBe(1)
     expect(analytics.menuSales[0].quantity).toBe(2)
+    expect(analytics.trend).toHaveLength(24)
+    expect(analytics.trend.find((point) => point.label === '03.00')?.revenue).toBe(15000)
+    expect(analytics.trend.find((point) => point.label === '05.00')?.revenue).toBe(15000)
   })
 })

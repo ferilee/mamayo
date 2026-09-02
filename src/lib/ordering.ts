@@ -135,11 +135,22 @@ export const getSalesAnalytics = (orders: Order[], period: ReportPeriod, referen
   const returningCustomers = activeCustomers.filter(([, count]) => count > 1).length
   const newCustomers = activeCustomers.filter(([customer]) => firstCustomerOrder.get(customer)! >= bounds.start.getTime()).length
   const trend: SalesAnalytics['trend'] = []
-  for (let cursor = new Date(bounds.start); cursor < bounds.end; cursor.setDate(cursor.getDate() + 1)) {
-    const next = new Date(cursor)
-    next.setDate(next.getDate() + 1)
-    const dayOrders = currentOrders.filter((order) => inRange(new Date(order.createdAt), cursor, next))
-    trend.push({ label: cursor.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }), revenue: dayOrders.reduce((sum, order) => sum + order.total, 0), orders: dayOrders.length })
+  if (period === 'daily') {
+    for (let hour = 0; hour < 24; hour += 1) {
+      const hourStart = new Date(bounds.start)
+      hourStart.setHours(hour)
+      const next = new Date(hourStart)
+      next.setHours(next.getHours() + 1)
+      const hourOrders = currentOrders.filter((order) => inRange(new Date(order.createdAt), hourStart, next))
+      trend.push({ label: `${String(hour).padStart(2, '0')}.00`, revenue: hourOrders.reduce((sum, order) => sum + order.total, 0), orders: hourOrders.length })
+    }
+  } else {
+    for (let cursor = new Date(bounds.start); cursor < bounds.end; cursor.setDate(cursor.getDate() + 1)) {
+      const next = new Date(cursor)
+      next.setDate(next.getDate() + 1)
+      const dayOrders = currentOrders.filter((order) => inRange(new Date(order.createdAt), cursor, next))
+      trend.push({ label: cursor.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }), revenue: dayOrders.reduce((sum, order) => sum + order.total, 0), orders: dayOrders.length })
+    }
   }
   const menuMap = new Map<string, MenuSalesStat>()
   for (const order of currentOrders) for (const item of order.items) {
