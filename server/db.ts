@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import Database from 'better-sqlite3'
 import { seedMenu, seedOrders, seedSettings } from '../src/data/seed.js'
 import { normalizeWhatsapp } from '../src/lib/ordering.js'
-import type { CreateOrderInput, MenuItem, Order, OrderStatus, PaymentStatus, StoreSettings } from '../src/lib/ordering.js'
+import type { CreateOrderInput, MenuItem, MenuUpdateInput, Order, OrderStatus, PaymentStatus, StoreSettings } from '../src/lib/ordering.js'
 
 const databasePath = resolve(process.env.MAMAYO_DB_PATH ?? 'data/mamayo.sqlite')
 mkdirSync(dirname(databasePath), { recursive: true })
@@ -151,10 +151,16 @@ export const updateOrder = (id: string, updates: { status?: OrderStatus; payment
   return getOrder(id)
 }
 
-export const updateMenu = (id: string, updates: { price?: number; available?: boolean }) => {
+export const updateMenu = (id: string, updates: MenuUpdateInput) => {
   const current = db.prepare('SELECT * FROM menu_items WHERE id = ?').get(id) as Record<string, unknown> | undefined
   if (!current) return undefined
-  db.prepare('UPDATE menu_items SET price = ?, available = ? WHERE id = ?').run(updates.price ?? Number(current.price), updates.available === undefined ? Number(current.available) : updates.available ? 1 : 0, id)
+  const name = updates.name === undefined ? String(current.name) : updates.name.trim()
+  const description = updates.description === undefined ? String(current.description) : updates.description.trim()
+  const category = updates.category === undefined ? String(current.category) : updates.category.trim()
+  const categoryLabel = updates.categoryLabel === undefined ? String(current.category_label) : updates.categoryLabel.trim()
+  const image = updates.image === undefined ? String(current.image) : updates.image.trim()
+  if (!name || !description || !category || !categoryLabel || !image) throw new Error('Nama, deskripsi, kategori, dan gambar menu wajib diisi.')
+  db.prepare('UPDATE menu_items SET name = ?, description = ?, price = ?, category = ?, category_label = ?, image = ?, available = ? WHERE id = ?').run(name, description, updates.price ?? Number(current.price), category, categoryLabel, image, updates.available === undefined ? Number(current.available) : updates.available ? 1 : 0, id)
   return menuFromRow(db.prepare('SELECT * FROM menu_items WHERE id = ?').get(id) as Record<string, unknown>)
 }
 

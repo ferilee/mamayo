@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { seedMenu, seedOrders, seedSettings } from '../data/seed'
-import type { CreateOrderInput, MenuItem, Order, StoreSettings } from './ordering'
+import type { CreateOrderInput, MenuItem, MenuUpdateInput, Order, StoreSettings } from './ordering'
 
 export type AppData = { menu: MenuItem[]; orders: Order[]; settings: StoreSettings }
 
@@ -53,10 +53,19 @@ export const useStore = () => {
     return order
   }, [])
 
-  const updateMenu = useCallback(async (id: string, updates: Partial<Pick<MenuItem, 'price' | 'available'>>) => {
+  const updateMenu = useCallback(async (id: string, updates: MenuUpdateInput) => {
     const menu = await request<MenuItem>(`/api/menu/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) })
     setData((current) => ({ ...current, menu: current.menu.map((item) => item.id === menu.id ? menu : item) }))
     return menu
+  }, [])
+
+  const uploadMenuImage = useCallback(async (file: File) => {
+    const formData = new FormData()
+    formData.append('image', file)
+    const response = await fetch('/api/uploads', { method: 'POST', body: formData })
+    const payload = await response.json() as { url?: string; error?: string }
+    if (!response.ok || !payload.url) throw new Error(payload.error ?? 'Gambar menu gagal diunggah.')
+    return payload.url
   }, [])
 
   const updateSettings = useCallback(async (updates: Partial<StoreSettings>) => {
@@ -65,5 +74,5 @@ export const useStore = () => {
     return settings
   }, [])
 
-  return { data, loading, error, createOrder, updateOrder, updateMenu, updateSettings }
+  return { data, loading, error, createOrder, updateOrder, updateMenu, uploadMenuImage, updateSettings }
 }

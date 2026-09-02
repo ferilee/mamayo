@@ -13,6 +13,8 @@ Data menu, pesanan, dan pengaturan disimpan di SQLite pada `data/mamayo.sqlite`.
 
 Nomor WhatsApp wajib diisi saat checkout dan menjadi identitas pelanggan untuk statistik. Dashboard pemilik masih menggunakan kata sandi demo `mamayo`; autentikasi ini hanya untuk prototipe frontend dan wajib diganti dengan autentikasi backend sebelum produksi.
 
+Pada tab **Katalog menu**, pemilik dapat menekan **Edit menu** untuk mengubah nama, deskripsi, harga, kategori, dan gambar. Gambar dapat diunggah langsung (maksimal 5 MB) atau memakai URL gambar, kemudian tekan **Simpan perubahan**. Tombol **Tersedia/Habis** digunakan untuk mengubah ketersediaan dengan cepat.
+
 ### Notifikasi Telegram pemilik
 
 Salin `.env.example` menjadi `.env`, lalu isi `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID`. Pemilik perlu membuka chat bot dan mengirim `/start` terlebih dahulu. Setelah itu server akan mengirim notifikasi pesanan baru dan perubahan status meskipun dashboard/browser pemilik sedang ditutup, selama server backend tetap berjalan.

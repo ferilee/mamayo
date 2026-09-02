@@ -16,6 +16,8 @@ export type MenuItem = {
   reviewCount: number
 }
 
+export type MenuUpdateInput = Partial<Pick<MenuItem, 'name' | 'description' | 'price' | 'category' | 'categoryLabel' | 'image' | 'available'>>
+
 export type CartLine = {
   item: MenuItem
   quantity: number

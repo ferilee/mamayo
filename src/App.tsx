@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, AtSign, Check, Clock3, House, MapPin, Minus,
   ClipboardList,
-  Moon, Plus, Search, ShoppingBag, Sparkles, Store, Sun,
+  ImagePlus, Moon, Pencil, Plus, Search, ShoppingBag, Sparkles, Store, Sun, X,
 } from 'lucide-react'
 import { useTheme } from './lib/theme'
 import { useStore } from './lib/store'
 import {
   cartTotal, formatRupiah, getSalesAnalytics, isValidWhatsapp, nextOrderStatus, paymentLabel, statusLabel,
 } from './lib/ordering'
-import type { CartLine, CreateOrderInput, MenuItem, Order, OrderStatus, PaymentMethod, ReportPeriod } from './lib/ordering'
+import type { CartLine, CreateOrderInput, MenuItem, MenuUpdateInput, Order, OrderStatus, PaymentMethod, ReportPeriod } from './lib/ordering'
 
 type View = 'shop' | 'checkout' | 'success' | 'status' | 'admin'
 
@@ -21,7 +21,7 @@ const categories = [
 ]
 
 function App() {
-  const { data, createOrder, updateOrder, updateMenu, updateSettings } = useStore()
+  const { data, createOrder, updateOrder, updateMenu, uploadMenuImage, updateSettings } = useStore()
   const { theme, toggleTheme } = useTheme()
   const [view, setView] = useState<View>('shop')
   const [activeCategory, setActiveCategory] = useState('semua')
@@ -98,7 +98,7 @@ function App() {
       {view === 'checkout' && <Checkout cart={cart} storeOpen={data.settings.isOpen} onBack={() => setView('shop')} onUpdate={updateQuantity} onSubmit={submitOrder} />}
       {view === 'success' && selectedOrder && <Success order={selectedOrder} onStatus={() => setView('status')} onShop={() => setView('shop')} />}
       {view === 'status' && selectedOrder && <Status order={selectedOrder} onBack={() => setView('shop')} />}
-      {view === 'admin' && <Admin data={data} onUpdateOrder={async (id, updates) => { const order = await updateOrder(id, updates); setSelectedOrder((current) => current && current.id === id ? order : current); return order }} onUpdateMenu={updateMenu} onUpdateSettings={updateSettings} onBack={() => setView('shop')} />}
+      {view === 'admin' && <Admin data={data} onUpdateOrder={async (id, updates) => { const order = await updateOrder(id, updates); setSelectedOrder((current) => current && current.id === id ? order : current); return order }} onUpdateMenu={updateMenu} onUploadImage={uploadMenuImage} onUpdateSettings={updateSettings} onBack={() => setView('shop')} />}
       {notice && <div className="toast"><Check size={16} /> {notice}</div>}
     </div>
   )
@@ -195,12 +195,13 @@ function Status({ order, onBack }: { order: Order; onBack: () => void }) {
   return <main className="page-width status-page"><button className="back-link" onClick={onBack}><ArrowLeft size={16} /> Kembali ke menu</button><div className="status-header"><div><div className="eyebrow">Pesanan {order.code}</div><h1>{order.status === 'cancelled' ? 'Pesanan dibatalkan' : statusLabel[order.status]}</h1><p>Terima kasih sudah mempercayakan makan siangmu ke Mamayo.</p></div><div className={`status-pill ${order.status}`}>{statusLabel[order.status]}</div></div>{order.status !== 'cancelled' && <div className="timeline">{steps.map((step, index) => <div className={`timeline-step ${index <= currentIndex ? 'done' : ''}`} key={step}><div className="timeline-marker">{index <= currentIndex ? <Check size={15} /> : index + 1}</div><div><b>{statusLabel[step]}</b><span>{step === 'pending' ? 'Pesanan masuk ke dapur' : step === 'processing' ? 'Chef Mamayo sedang memasak' : step === 'ready' ? 'Silakan ambil di warung' : 'Selamat menikmati!'}</span></div></div>)}</div>}<div className="status-order-card"><div className="summary-heading"><h2>Rincian pesanan</h2><span>{new Date(order.createdAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>{order.items.map((item) => <div className="status-line" key={item.itemId}><span>{item.quantity}× {item.name}</span><strong>{formatRupiah(item.price * item.quantity)}</strong></div>)}<div className="summary-total"><span>Total</span><strong>{formatRupiah(order.total)}</strong></div><div className="payment-line"><span>Bayar dengan {paymentLabel[order.paymentMethod]}</span><span className={order.paymentStatus === 'verified' ? 'verified' : ''}>{order.paymentStatus === 'verified' ? 'Terverifikasi' : order.paymentMethod === 'cash' ? 'Saat pengambilan' : 'Menunggu konfirmasi'}</span></div></div></main>
 }
 
-function Admin({ data, onUpdateOrder, onUpdateMenu, onUpdateSettings, onBack }: { data: ReturnType<typeof useStore>['data']; onUpdateOrder: ReturnType<typeof useStore>['updateOrder']; onUpdateMenu: ReturnType<typeof useStore>['updateMenu']; onUpdateSettings: ReturnType<typeof useStore>['updateSettings']; onBack: () => void }) {
+function Admin({ data, onUpdateOrder, onUpdateMenu, onUploadImage, onUpdateSettings, onBack }: { data: ReturnType<typeof useStore>['data']; onUpdateOrder: ReturnType<typeof useStore>['updateOrder']; onUpdateMenu: ReturnType<typeof useStore>['updateMenu']; onUploadImage: ReturnType<typeof useStore>['uploadMenuImage']; onUpdateSettings: ReturnType<typeof useStore>['updateSettings']; onBack: () => void }) {
   const [tab, setTab] = useState<'orders' | 'menu' | 'analytics'>('orders')
   const [period, setPeriod] = useState<ReportPeriod>('daily')
   const [authed, setAuthed] = useState(false)
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState(false)
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const pending = data.orders.filter((order) => !['completed', 'cancelled'].includes(order.status)).length
   const analytics = useMemo(() => getSalesAnalytics(data.orders, period), [data.orders, period])
   if (!authed) return <main className="center-page"><div className="admin-login"><div className="brand-mark large">M</div><div className="eyebrow">Area pemilik</div><h1>Selamat datang kembali.</h1><p>Masuk untuk mengelola menu dan pesanan Mamayo Kitchen.</p><form onSubmit={(event) => { event.preventDefault(); if (pin === 'mamayo') setAuthed(true); else setPinError(true) }}><label>Kata sandi demo<input autoFocus type="password" value={pin} onChange={(event) => { setPin(event.target.value); setPinError(false) }} placeholder="Masukkan kata sandi" /></label>{pinError && <div className="form-error">Kata sandi belum benar. (Demo: mamayo)</div>}<button className="primary-button full-button">Masuk ke dashboard <ArrowRight size={17} /></button></form><button className="text-button" onClick={onBack}>Kembali ke halaman pelanggan</button></div></main>
@@ -211,7 +212,39 @@ function Admin({ data, onUpdateOrder, onUpdateMenu, onUpdateSettings, onBack }: 
     if (!Number.isFinite(price) || price < 0) return
     void onUpdateMenu(itemId, { price })
   }
-  return <main className="admin-page page-width"><div className="admin-top"><button className="back-link" onClick={onBack}><ArrowLeft size={16} /> Tampilan pelanggan</button><div className="admin-store-status"><i className={data.settings.isOpen ? 'open-dot' : 'closed-dot'} /> Warung {data.settings.isOpen ? 'buka' : 'tutup'} <button onClick={() => { void onUpdateSettings({ isOpen: !data.settings.isOpen }) }}>{data.settings.isOpen ? 'Tutup sementara' : 'Buka warung'}</button></div></div><div className="admin-heading"><div><div className="eyebrow">Dashboard hari ini</div><h1>Halo, Mamayo.</h1><p>Kelola pesanan dan menu dari satu tempat.</p></div><div className="admin-stats"><div><strong>{pending}</strong><span>Pesanan aktif</span></div><div><strong>{data.menu.filter((item) => item.available).length}</strong><span>Menu tersedia</span></div></div></div><div className="admin-tabs"><button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>Pesanan <span>{pending}</span></button><button className={tab === 'analytics' ? 'active' : ''} onClick={() => setTab('analytics')}>Statistik</button><button className={tab === 'menu' ? 'active' : ''} onClick={() => setTab('menu')}>Katalog menu</button></div>{tab === 'orders' ? <div className="admin-orders">{data.orders.map((order) => <AdminOrder key={order.id} order={order} onAdvance={() => advance(order)} />)}</div> : tab === 'menu' ? <div className="admin-menu-list">{data.menu.map((item) => <div className="admin-menu-row" key={item.id}><img src={item.image} alt="" /><div><b>{item.name}</b><span>{item.categoryLabel}</span></div><div className="admin-menu-price"><span>Harga</span><div><small>Rp</small><input type="number" min="0" step="1000" value={item.price} onChange={(event) => updatePrice(item.id, event.target.value)} aria-label={`Harga ${item.name}`} /></div></div><button className={`availability ${item.available ? 'available' : ''}`} onClick={() => toggleAvailability(item)}><i />{item.available ? 'Tersedia' : 'Habis'}</button></div>)}</div> : <AdminAnalytics analytics={analytics} period={period} onPeriod={setPeriod} />}</main>
+  return <main className="admin-page page-width"><div className="admin-top"><button className="back-link" onClick={onBack}><ArrowLeft size={16} /> Tampilan pelanggan</button><div className="admin-store-status"><i className={data.settings.isOpen ? 'open-dot' : 'closed-dot'} /> Warung {data.settings.isOpen ? 'buka' : 'tutup'} <button onClick={() => { void onUpdateSettings({ isOpen: !data.settings.isOpen }) }}>{data.settings.isOpen ? 'Tutup sementara' : 'Buka warung'}</button></div></div><div className="admin-heading"><div><div className="eyebrow">Dashboard hari ini</div><h1>Halo, Mamayo.</h1><p>Kelola pesanan dan menu dari satu tempat.</p></div><div className="admin-stats"><div><strong>{pending}</strong><span>Pesanan aktif</span></div><div><strong>{data.menu.filter((item) => item.available).length}</strong><span>Menu tersedia</span></div></div></div><div className="admin-tabs"><button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>Pesanan <span>{pending}</span></button><button className={tab === 'analytics' ? 'active' : ''} onClick={() => setTab('analytics')}>Statistik</button><button className={tab === 'menu' ? 'active' : ''} onClick={() => setTab('menu')}>Katalog menu</button></div>{tab === 'orders' ? <div className="admin-orders">{data.orders.map((order) => <AdminOrder key={order.id} order={order} onAdvance={() => advance(order)} />)}</div> : tab === 'menu' ? <div className="admin-menu-list">{data.menu.map((item) => <div className="admin-menu-row" key={item.id}><img src={item.image} alt={item.name} /><div><b>{item.name}</b><span>{item.categoryLabel}</span></div><div className="admin-menu-price"><span>Harga</span><div><small>Rp</small><input type="number" min="0" step="1000" value={item.price} onChange={(event) => updatePrice(item.id, event.target.value)} aria-label={`Harga ${item.name}`} /></div></div><button className={`availability ${item.available ? 'available' : ''}`} onClick={() => toggleAvailability(item)}><i />{item.available ? 'Tersedia' : 'Habis'}</button><button className="edit-menu-button" onClick={() => setEditingItem(item)}><Pencil size={13} /> Edit menu</button></div>)}</div> : <AdminAnalytics analytics={analytics} period={period} onPeriod={setPeriod} />}{editingItem && <MenuEditor item={editingItem} onClose={() => setEditingItem(null)} onUploadImage={onUploadImage} onSave={async (id, updates) => { const updated = await onUpdateMenu(id, updates); setEditingItem(null); return updated }} />}</main>
+}
+
+function MenuEditor({ item, onClose, onSave, onUploadImage }: { item: MenuItem; onClose: () => void; onSave: (id: string, updates: MenuUpdateInput) => Promise<MenuItem>; onUploadImage: (file: File) => Promise<string> }) {
+  const [name, setName] = useState(item.name)
+  const [description, setDescription] = useState(item.description)
+  const [price, setPrice] = useState(String(item.price))
+  const [category, setCategory] = useState(item.category)
+  const [image, setImage] = useState(item.image)
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleImage = (file: File | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) { setError('File harus berupa gambar.'); return }
+    if (file.size > 5 * 1024 * 1024) { setError('Ukuran gambar maksimal 5 MB.'); return }
+    setError('')
+    setUploading(true)
+    void onUploadImage(file).then(setImage).catch((reason) => setError(reason instanceof Error ? reason.message : 'Gambar gagal diunggah.')).finally(() => setUploading(false))
+  }
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault()
+    const numericPrice = Number(price)
+    if (!name.trim() || !description.trim() || !image.trim()) { setError('Nama, deskripsi, dan gambar wajib diisi.'); return }
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) { setError('Harga menu tidak valid.'); return }
+    setError('')
+    setSaving(true)
+    void onSave(item.id, { name: name.trim(), description: description.trim(), price: numericPrice, category, categoryLabel: categories.find((option) => option.id === category)?.label ?? category, image: image.trim() }).catch((reason) => setError(reason instanceof Error ? reason.message : 'Menu gagal disimpan.')).finally(() => setSaving(false))
+  }
+
+  return <div className="menu-editor-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="menu-editor" role="dialog" aria-modal="true" aria-labelledby="menu-editor-title"><div className="menu-editor-heading"><div><div className="eyebrow">Katalog menu</div><h2 id="menu-editor-title">Edit menu</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="Tutup edit menu"><X size={18} /></button></div><form onSubmit={submit}><label>Nama menu <span>*</span><input value={name} onChange={(event) => setName(event.target.value)} /></label><label>Deskripsi <span>*</span><textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} /></label><div className="menu-editor-fields"><label>Harga <span>*</span><input type="number" min="0" step="1000" value={price} onChange={(event) => setPrice(event.target.value)} /></label><label>Kategori <span>*</span><select value={category} onChange={(event) => setCategory(event.target.value)}>{categories.filter((option) => option.id !== 'semua').map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label></div><div className="menu-image-field"><label>Gambar menu <span>*</span><div className="menu-image-preview"><img src={image} alt="Preview menu" /></div><input type="text" value={image} onChange={(event) => setImage(event.target.value)} placeholder="https://... atau /api/uploads/..." /></label><label className="file-label"><ImagePlus size={14} /> {uploading ? 'Mengunggah...' : 'Upload gambar baru'}<input type="file" accept="image/*" disabled={uploading} onChange={(event) => handleImage(event.target.files?.[0])} /></label><small className="field-hint">JPG, PNG, WebP maksimal 5 MB.</small></div>{error && <div className="form-error">{error}</div>}<div className="menu-editor-actions"><button type="button" className="outline-button" onClick={onClose}>Batal</button><button className="primary-button" disabled={saving || uploading}>{saving ? 'Menyimpan...' : 'Simpan perubahan'}</button></div></form></section></div>
 }
 
 function AdminAnalytics({ analytics, period, onPeriod }: { analytics: ReturnType<typeof getSalesAnalytics>; period: ReportPeriod; onPeriod: (period: ReportPeriod) => void }) {

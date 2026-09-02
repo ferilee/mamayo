@@ -21,7 +21,8 @@
     "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
-    "better-sqlite3": "latest"
+    "better-sqlite3": "latest",
+    "multer": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",
@@ -30,6 +31,7 @@
     "@types/cors": "latest",
     "@types/express": "latest",
     "@types/node": "latest",
+    "@types/multer": "latest",
     "concurrently": "latest",
     "tsx": "latest",
     "vitest": "latest",
