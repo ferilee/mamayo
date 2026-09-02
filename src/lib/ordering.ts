@@ -38,6 +38,16 @@ export type Order = {
   status: OrderStatus
 }
 
+export type CreateOrderInput = {
+  customerName: string
+  whatsapp: string
+  pickupTime: string
+  note?: string
+  paymentMethod: PaymentMethod
+  paymentProof?: string
+  items: Array<{ itemId: string; quantity: number }>
+}
+
 export type StoreSettings = {
   isOpen: boolean
   hours: string

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, AtSign, Check, Clock3, House, MapPin, Minus,
   ClipboardList,
@@ -7,9 +7,9 @@ import {
 import { useTheme } from './lib/theme'
 import { useStore } from './lib/store'
 import {
-  cartTotal, createOrderCode, formatRupiah, getSalesAnalytics, isValidWhatsapp, nextOrderStatus, normalizeWhatsapp, paymentLabel, statusLabel,
+  cartTotal, formatRupiah, getSalesAnalytics, isValidWhatsapp, nextOrderStatus, paymentLabel, statusLabel,
 } from './lib/ordering'
-import type { CartLine, MenuItem, Order, OrderStatus, PaymentMethod, ReportPeriod } from './lib/ordering'
+import type { CartLine, CreateOrderInput, MenuItem, Order, OrderStatus, PaymentMethod, ReportPeriod } from './lib/ordering'
 
 type View = 'shop' | 'checkout' | 'success' | 'status' | 'admin'
 
@@ -21,7 +21,7 @@ const categories = [
 ]
 
 function App() {
-  const { data, setData } = useStore()
+  const { data, createOrder, updateOrder, updateMenu, updateSettings } = useStore()
   const { theme, toggleTheme } = useTheme()
   const [view, setView] = useState<View>('shop')
   const [activeCategory, setActiveCategory] = useState('semua')
@@ -29,6 +29,12 @@ function App() {
   const [cart, setCart] = useState<CartLine[]>([])
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+    if (!selectedOrder) return
+    const latest = data.orders.find((order) => order.id === selectedOrder.id)
+    if (latest) setSelectedOrder(latest)
+  }, [data.orders, selectedOrder?.id])
 
   const visibleMenu = useMemo(() => data.menu.filter((item) => {
     const matchesCategory = activeCategory === 'semua' || item.category === activeCategory
@@ -56,38 +62,30 @@ function App() {
     }))
   }
 
-  const submitOrder = (form: { name: string; whatsapp: string; pickup: string; note: string; payment: PaymentMethod; paymentProof?: string }) => {
-    const total = cartTotal(cart)
-    const order: Order = {
-      id: crypto.randomUUID(),
-      code: createOrderCode(),
-      createdAt: new Date().toISOString(),
-      customerName: form.name,
-      whatsapp: normalizeWhatsapp(form.whatsapp),
-      pickupTime: form.pickup,
-      note: form.note || undefined,
-      items: cart.map(({ item, quantity }) => ({ itemId: item.id, name: item.name, price: item.price, quantity })),
-      subtotal: total,
-      total,
-      paymentMethod: form.payment,
-      paymentStatus: form.payment === 'cash' ? 'not_required' : form.paymentProof ? 'proof_submitted' : 'pending',
-      paymentProof: form.paymentProof,
-      status: 'pending',
+  const submitOrder = async (form: { name: string; whatsapp: string; pickup: string; note: string; payment: PaymentMethod; paymentProof?: string }) => {
+    try {
+      const input: CreateOrderInput = {
+        customerName: form.name,
+        whatsapp: form.whatsapp,
+        pickupTime: form.pickup,
+        note: form.note || undefined,
+        paymentMethod: form.payment,
+        paymentProof: form.paymentProof,
+        items: cart.map(({ item, quantity }) => ({ itemId: item.id, quantity })),
+      }
+      const order = await createOrder(input)
+      setSelectedOrder(order)
+      setCart([])
+      setView('success')
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : 'Pesanan tidak dapat dibuat.')
+      window.setTimeout(() => setNotice(''), 3200)
     }
-    setData((current) => ({ ...current, orders: [order, ...current.orders] }))
-    setSelectedOrder(order)
-    setCart([])
-    setView('success')
   }
 
   const openOrderStatus = (order: Order) => {
     setSelectedOrder(order)
     setView('status')
-  }
-
-  const updateOrder = (orderId: string, updates: Partial<Order>) => {
-    setData((current) => ({ ...current, orders: current.orders.map((order) => order.id === orderId ? { ...order, ...updates } : order) }))
-    setSelectedOrder((current) => current && current.id === orderId ? { ...current, ...updates } : current)
   }
 
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0)
@@ -100,7 +98,7 @@ function App() {
       {view === 'checkout' && <Checkout cart={cart} storeOpen={data.settings.isOpen} onBack={() => setView('shop')} onUpdate={updateQuantity} onSubmit={submitOrder} />}
       {view === 'success' && selectedOrder && <Success order={selectedOrder} onStatus={() => setView('status')} onShop={() => setView('shop')} />}
       {view === 'status' && selectedOrder && <Status order={selectedOrder} onBack={() => setView('shop')} />}
-      {view === 'admin' && <Admin data={data} onData={setData} onBack={() => setView('shop')} />}
+      {view === 'admin' && <Admin data={data} onUpdateOrder={async (id, updates) => { const order = await updateOrder(id, updates); setSelectedOrder((current) => current && current.id === id ? order : current); return order }} onUpdateMenu={updateMenu} onUpdateSettings={updateSettings} onBack={() => setView('shop')} />}
       {notice && <div className="toast"><Check size={16} /> {notice}</div>}
     </div>
   )
@@ -197,7 +195,7 @@ function Status({ order, onBack }: { order: Order; onBack: () => void }) {
   return <main className="page-width status-page"><button className="back-link" onClick={onBack}><ArrowLeft size={16} /> Kembali ke menu</button><div className="status-header"><div><div className="eyebrow">Pesanan {order.code}</div><h1>{order.status === 'cancelled' ? 'Pesanan dibatalkan' : statusLabel[order.status]}</h1><p>Terima kasih sudah mempercayakan makan siangmu ke Mamayo.</p></div><div className={`status-pill ${order.status}`}>{statusLabel[order.status]}</div></div>{order.status !== 'cancelled' && <div className="timeline">{steps.map((step, index) => <div className={`timeline-step ${index <= currentIndex ? 'done' : ''}`} key={step}><div className="timeline-marker">{index <= currentIndex ? <Check size={15} /> : index + 1}</div><div><b>{statusLabel[step]}</b><span>{step === 'pending' ? 'Pesanan masuk ke dapur' : step === 'processing' ? 'Chef Mamayo sedang memasak' : step === 'ready' ? 'Silakan ambil di warung' : 'Selamat menikmati!'}</span></div></div>)}</div>}<div className="status-order-card"><div className="summary-heading"><h2>Rincian pesanan</h2><span>{new Date(order.createdAt).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>{order.items.map((item) => <div className="status-line" key={item.itemId}><span>{item.quantity}× {item.name}</span><strong>{formatRupiah(item.price * item.quantity)}</strong></div>)}<div className="summary-total"><span>Total</span><strong>{formatRupiah(order.total)}</strong></div><div className="payment-line"><span>Bayar dengan {paymentLabel[order.paymentMethod]}</span><span className={order.paymentStatus === 'verified' ? 'verified' : ''}>{order.paymentStatus === 'verified' ? 'Terverifikasi' : order.paymentMethod === 'cash' ? 'Saat pengambilan' : 'Menunggu konfirmasi'}</span></div></div></main>
 }
 
-function Admin({ data, onData, onBack }: { data: ReturnType<typeof useStore>['data']; onData: ReturnType<typeof useStore>['setData']; onBack: () => void }) {
+function Admin({ data, onUpdateOrder, onUpdateMenu, onUpdateSettings, onBack }: { data: ReturnType<typeof useStore>['data']; onUpdateOrder: ReturnType<typeof useStore>['updateOrder']; onUpdateMenu: ReturnType<typeof useStore>['updateMenu']; onUpdateSettings: ReturnType<typeof useStore>['updateSettings']; onBack: () => void }) {
   const [tab, setTab] = useState<'orders' | 'menu' | 'analytics'>('orders')
   const [period, setPeriod] = useState<ReportPeriod>('daily')
   const [authed, setAuthed] = useState(false)
@@ -206,14 +204,14 @@ function Admin({ data, onData, onBack }: { data: ReturnType<typeof useStore>['da
   const pending = data.orders.filter((order) => !['completed', 'cancelled'].includes(order.status)).length
   const analytics = useMemo(() => getSalesAnalytics(data.orders, period), [data.orders, period])
   if (!authed) return <main className="center-page"><div className="admin-login"><div className="brand-mark large">M</div><div className="eyebrow">Area pemilik</div><h1>Selamat datang kembali.</h1><p>Masuk untuk mengelola menu dan pesanan Mamayo Kitchen.</p><form onSubmit={(event) => { event.preventDefault(); if (pin === 'mamayo') setAuthed(true); else setPinError(true) }}><label>Kata sandi demo<input autoFocus type="password" value={pin} onChange={(event) => { setPin(event.target.value); setPinError(false) }} placeholder="Masukkan kata sandi" /></label>{pinError && <div className="form-error">Kata sandi belum benar. (Demo: mamayo)</div>}<button className="primary-button full-button">Masuk ke dashboard <ArrowRight size={17} /></button></form><button className="text-button" onClick={onBack}>Kembali ke halaman pelanggan</button></div></main>
-  const toggleAvailability = (itemId: string) => onData((current) => ({ ...current, menu: current.menu.map((item) => item.id === itemId ? { ...item, available: !item.available } : item) }))
-  const advance = (order: Order) => { const next = nextOrderStatus[order.status]; if (next) onData((current) => ({ ...current, orders: current.orders.map((item) => item.id === order.id ? { ...item, status: next, paymentStatus: next === 'processing' && item.paymentMethod === 'transfer' ? 'verified' : item.paymentStatus } : item) })) }
+  const toggleAvailability = (item: MenuItem) => { void onUpdateMenu(item.id, { available: !item.available }) }
+  const advance = (order: Order) => { const next = nextOrderStatus[order.status]; if (next) void onUpdateOrder(order.id, { status: next, ...(next === 'processing' && order.paymentMethod === 'transfer' ? { paymentStatus: 'verified' } : {}) }) }
   const updatePrice = (itemId: string, value: string) => {
     const price = Number(value)
     if (!Number.isFinite(price) || price < 0) return
-    onData((current) => ({ ...current, menu: current.menu.map((item) => item.id === itemId ? { ...item, price } : item) }))
+    void onUpdateMenu(itemId, { price })
   }
-  return <main className="admin-page page-width"><div className="admin-top"><button className="back-link" onClick={onBack}><ArrowLeft size={16} /> Tampilan pelanggan</button><div className="admin-store-status"><i className={data.settings.isOpen ? 'open-dot' : 'closed-dot'} /> Warung {data.settings.isOpen ? 'buka' : 'tutup'} <button onClick={() => onData((current) => ({ ...current, settings: { ...current.settings, isOpen: !current.settings.isOpen } }))}>{data.settings.isOpen ? 'Tutup sementara' : 'Buka warung'}</button></div></div><div className="admin-heading"><div><div className="eyebrow">Dashboard hari ini</div><h1>Halo, Mamayo.</h1><p>Kelola pesanan dan menu dari satu tempat.</p></div><div className="admin-stats"><div><strong>{pending}</strong><span>Pesanan aktif</span></div><div><strong>{data.menu.filter((item) => item.available).length}</strong><span>Menu tersedia</span></div></div></div><div className="admin-tabs"><button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>Pesanan <span>{pending}</span></button><button className={tab === 'analytics' ? 'active' : ''} onClick={() => setTab('analytics')}>Statistik</button><button className={tab === 'menu' ? 'active' : ''} onClick={() => setTab('menu')}>Katalog menu</button></div>{tab === 'orders' ? <div className="admin-orders">{data.orders.map((order) => <AdminOrder key={order.id} order={order} onAdvance={() => advance(order)} />)}</div> : tab === 'menu' ? <div className="admin-menu-list">{data.menu.map((item) => <div className="admin-menu-row" key={item.id}><img src={item.image} alt="" /><div><b>{item.name}</b><span>{item.categoryLabel}</span></div><div className="admin-menu-price"><span>Harga</span><div><small>Rp</small><input type="number" min="0" step="1000" value={item.price} onChange={(event) => updatePrice(item.id, event.target.value)} aria-label={`Harga ${item.name}`} /></div></div><button className={`availability ${item.available ? 'available' : ''}`} onClick={() => toggleAvailability(item.id)}><i />{item.available ? 'Tersedia' : 'Habis'}</button></div>)}</div> : <AdminAnalytics analytics={analytics} period={period} onPeriod={setPeriod} />}</main>
+  return <main className="admin-page page-width"><div className="admin-top"><button className="back-link" onClick={onBack}><ArrowLeft size={16} /> Tampilan pelanggan</button><div className="admin-store-status"><i className={data.settings.isOpen ? 'open-dot' : 'closed-dot'} /> Warung {data.settings.isOpen ? 'buka' : 'tutup'} <button onClick={() => { void onUpdateSettings({ isOpen: !data.settings.isOpen }) }}>{data.settings.isOpen ? 'Tutup sementara' : 'Buka warung'}</button></div></div><div className="admin-heading"><div><div className="eyebrow">Dashboard hari ini</div><h1>Halo, Mamayo.</h1><p>Kelola pesanan dan menu dari satu tempat.</p></div><div className="admin-stats"><div><strong>{pending}</strong><span>Pesanan aktif</span></div><div><strong>{data.menu.filter((item) => item.available).length}</strong><span>Menu tersedia</span></div></div></div><div className="admin-tabs"><button className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>Pesanan <span>{pending}</span></button><button className={tab === 'analytics' ? 'active' : ''} onClick={() => setTab('analytics')}>Statistik</button><button className={tab === 'menu' ? 'active' : ''} onClick={() => setTab('menu')}>Katalog menu</button></div>{tab === 'orders' ? <div className="admin-orders">{data.orders.map((order) => <AdminOrder key={order.id} order={order} onAdvance={() => advance(order)} />)}</div> : tab === 'menu' ? <div className="admin-menu-list">{data.menu.map((item) => <div className="admin-menu-row" key={item.id}><img src={item.image} alt="" /><div><b>{item.name}</b><span>{item.categoryLabel}</span></div><div className="admin-menu-price"><span>Harga</span><div><small>Rp</small><input type="number" min="0" step="1000" value={item.price} onChange={(event) => updatePrice(item.id, event.target.value)} aria-label={`Harga ${item.name}`} /></div></div><button className={`availability ${item.available ? 'available' : ''}`} onClick={() => toggleAvailability(item)}><i />{item.available ? 'Tersedia' : 'Habis'}</button></div>)}</div> : <AdminAnalytics analytics={analytics} period={period} onPeriod={setPeriod} />}</main>
 }
 
 function AdminAnalytics({ analytics, period, onPeriod }: { analytics: ReturnType<typeof getSalesAnalytics>; period: ReportPeriod; onPeriod: (period: ReportPeriod) => void }) {
