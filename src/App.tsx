@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, AtSign, Check, Clock3, House, MapPin, Minus,
   ClipboardList,
-  Plus, Search, ShoppingBag, Sparkles, Store,
+  Moon, Plus, Search, ShoppingBag, Sparkles, Store, Sun,
 } from 'lucide-react'
+import { useTheme } from './lib/theme'
 import { useStore } from './lib/store'
 import {
   cartTotal, createOrderCode, formatRupiah, getSalesAnalytics, isValidWhatsapp, nextOrderStatus, normalizeWhatsapp, paymentLabel, statusLabel,
@@ -21,6 +22,7 @@ const categories = [
 
 function App() {
   const { data, setData } = useStore()
+  const { theme, toggleTheme } = useTheme()
   const [view, setView] = useState<View>('shop')
   const [activeCategory, setActiveCategory] = useState('semua')
   const [query, setQuery] = useState('')
@@ -92,7 +94,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Header view={view} cartCount={cartCount} onShop={() => setView('shop')} onAdmin={() => setView('admin')} onOrders={() => data.orders[0] ? openOrderStatus(data.orders[0]) : setView('shop')} onCart={() => setView('checkout')} />
+      <Header view={view} theme={theme} cartCount={cartCount} onToggleTheme={toggleTheme} onShop={() => setView('shop')} onAdmin={() => setView('admin')} onOrders={() => data.orders[0] ? openOrderStatus(data.orders[0]) : setView('shop')} onCart={() => setView('checkout')} />
       <MobileBottomNav view={view} cartCount={cartCount} onShop={() => setView('shop')} onOrders={() => data.orders[0] ? openOrderStatus(data.orders[0]) : setView('shop')} onCart={() => setView('checkout')} onAdmin={() => setView('admin')} />
       {view === 'shop' && <Shop menu={visibleMenu} query={query} category={activeCategory} storeOpen={data.settings.isOpen} onQuery={setQuery} onCategory={setActiveCategory} onAdd={addToCart} onCart={() => setView('checkout')} onStatus={openOrderStatus} orders={data.orders} />}
       {view === 'checkout' && <Checkout cart={cart} storeOpen={data.settings.isOpen} onBack={() => setView('shop')} onUpdate={updateQuantity} onSubmit={submitOrder} />}
@@ -104,7 +106,7 @@ function App() {
   )
 }
 
-function Header({ view, cartCount, onShop, onAdmin, onOrders, onCart }: { view: View; cartCount: number; onShop: () => void; onAdmin: () => void; onOrders: () => void; onCart: () => void }) {
+function Header({ view, theme, cartCount, onToggleTheme, onShop, onAdmin, onOrders, onCart }: { view: View; theme: 'light' | 'dark'; cartCount: number; onToggleTheme: () => void; onShop: () => void; onAdmin: () => void; onOrders: () => void; onCart: () => void }) {
   return <header className="topbar">
     <button className="brand" onClick={onShop} aria-label="Kembali ke katalog">
       <span className="brand-mark">M</span><span><strong>Mamayo</strong><small>Kitchen</small></span>
@@ -114,6 +116,7 @@ function Header({ view, cartCount, onShop, onAdmin, onOrders, onCart }: { view: 
       <button onClick={onOrders} className={view === 'status' ? 'active' : ''}>Pesanan saya</button>
     </nav>
     <div className="header-actions">
+      <button className="theme-toggle" onClick={onToggleTheme} aria-label={theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'} title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button>
       <button className="icon-button cart-button" onClick={onCart} aria-label="Buka keranjang"><ShoppingBag size={19} />{cartCount > 0 && <span>{cartCount}</span>}</button>
       <button className="owner-link" onClick={onAdmin}><Store size={16} /> <span>Area pemilik</span></button>
     </div>
