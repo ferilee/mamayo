@@ -12,6 +12,8 @@ export type MenuItem = {
   image: string
   available: boolean
   popular?: boolean
+  rating: number
+  reviewCount: number
 }
 
 export type CartLine = {

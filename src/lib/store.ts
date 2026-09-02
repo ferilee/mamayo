@@ -8,10 +8,17 @@ export type AppData = { menu: MenuItem[]; orders: Order[]; settings: StoreSettin
 
 const initialData: AppData = { menu: seedMenu, orders: seedOrders, settings: seedSettings }
 
+const hydrateMenu = (savedMenu: MenuItem[]) => savedMenu.map((item) => {
+  const seedItem = seedMenu.find((seed) => seed.id === item.id)
+  return { ...seedItem, ...item, rating: item.rating ?? seedItem?.rating ?? 0, reviewCount: item.reviewCount ?? seedItem?.reviewCount ?? 0 }
+})
+
 const loadData = (): AppData => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
-    return saved ? JSON.parse(saved) as AppData : initialData
+    if (!saved) return initialData
+    const parsed = JSON.parse(saved) as AppData
+    return { ...initialData, ...parsed, menu: hydrateMenu(parsed.menu ?? seedMenu), orders: parsed.orders ?? seedOrders, settings: { ...seedSettings, ...parsed.settings } }
   } catch {
     return initialData
   }

@@ -3,7 +3,7 @@ import { cartTotal, formatRupiah, getSalesAnalytics, isValidWhatsapp, nextOrderS
 import type { CartLine, MenuItem, Order } from './ordering'
 
 const menuItem: MenuItem = {
-  id: 'test', name: 'Menu test', description: '', price: 15000, category: 'utama', categoryLabel: 'Menu utama', image: '', available: true,
+  id: 'test', name: 'Menu test', description: '', price: 15000, category: 'utama', categoryLabel: 'Menu utama', image: '', available: true, rating: 4.8, reviewCount: 10,
 }
 
 describe('ordering domain', () => {

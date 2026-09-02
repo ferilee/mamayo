@@ -11,6 +11,8 @@ export const seedMenu: MenuItem[] = [
     image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=900&q=85',
     available: true,
     popular: true,
+    rating: 4.9,
+    reviewCount: 28,
   },
   {
     id: 'ayam-geprek',
@@ -22,6 +24,8 @@ export const seedMenu: MenuItem[] = [
     image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=900&q=85',
     available: true,
     popular: true,
+    rating: 4.8,
+    reviewCount: 21,
   },
   {
     id: 'mie-nyemek',
@@ -32,6 +36,8 @@ export const seedMenu: MenuItem[] = [
     categoryLabel: 'Menu utama',
     image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=900&q=85',
     available: true,
+    rating: 4.7,
+    reviewCount: 16,
   },
   {
     id: 'tahu-cabe-garam',
@@ -42,6 +48,8 @@ export const seedMenu: MenuItem[] = [
     categoryLabel: 'Camilan',
     image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?auto=format&fit=crop&w=900&q=85',
     available: true,
+    rating: 4.8,
+    reviewCount: 12,
   },
   {
     id: 'es-teh-melati',
@@ -52,6 +60,8 @@ export const seedMenu: MenuItem[] = [
     categoryLabel: 'Minuman',
     image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=900&q=85',
     available: true,
+    rating: 4.9,
+    reviewCount: 34,
   },
   {
     id: 'es-jeruk-kunci',
@@ -62,6 +72,8 @@ export const seedMenu: MenuItem[] = [
     categoryLabel: 'Minuman',
     image: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?auto=format&fit=crop&w=900&q=85',
     available: true,
+    rating: 4.6,
+    reviewCount: 9,
   },
 ]
 

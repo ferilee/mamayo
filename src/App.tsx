@@ -158,7 +158,7 @@ function Shop({ menu, query, category, storeOpen, onQuery, onCategory, onAdd, on
 function MenuCard({ item, onAdd }: { item: MenuItem; onAdd: (item: MenuItem) => void }) {
   return <article className={`menu-card ${!item.available ? 'unavailable' : ''}`}>
     <div className="card-image"><img src={item.image} alt={item.name} />{item.popular && <span className="popular-badge">Favorit</span>}{!item.available && <span className="sold-badge">Habis hari ini</span>}</div>
-    <div className="card-content"><div className="card-category">{item.categoryLabel}</div><h3>{item.name}</h3><p>{item.description}</p><div className="card-bottom"><strong>{formatRupiah(item.price)}</strong><button className="add-button" onClick={() => onAdd(item)} disabled={!item.available} aria-label={`Tambah ${item.name}`}><Plus size={18} /></button></div></div>
+    <div className="card-content"><div className="card-category">{item.categoryLabel}</div><div className="menu-rating" aria-label={`Rating ${item.rating} dari 5, ${item.reviewCount} ulasan`}><span className="rating-stars" aria-hidden="true">★★★★★</span><strong>{item.rating.toFixed(1)}</strong><small>({item.reviewCount})</small></div><h3>{item.name}</h3><p>{item.description}</p><div className="card-bottom"><strong>{formatRupiah(item.price)}</strong><button className="add-button" onClick={() => onAdd(item)} disabled={!item.available} aria-label={`Tambah ${item.name}`}><Plus size={18} /></button></div></div>
   </article>
 }
 
