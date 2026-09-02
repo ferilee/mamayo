@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
-  ArrowLeft, ArrowRight, AtSign, Check, Clock3, MapPin, Minus,
+  ArrowLeft, ArrowRight, AtSign, Check, Clock3, House, MapPin, Minus,
+  ClipboardList,
   Plus, Search, ShoppingBag, Sparkles, Store,
 } from 'lucide-react'
 import { useStore } from './lib/store'
@@ -92,6 +93,7 @@ function App() {
   return (
     <div className="app-shell">
       <Header view={view} cartCount={cartCount} onShop={() => setView('shop')} onAdmin={() => setView('admin')} onOrders={() => data.orders[0] ? openOrderStatus(data.orders[0]) : setView('shop')} onCart={() => setView('checkout')} />
+      <MobileBottomNav view={view} cartCount={cartCount} onShop={() => setView('shop')} onOrders={() => data.orders[0] ? openOrderStatus(data.orders[0]) : setView('shop')} onCart={() => setView('checkout')} onAdmin={() => setView('admin')} />
       {view === 'shop' && <Shop menu={visibleMenu} query={query} category={activeCategory} storeOpen={data.settings.isOpen} onQuery={setQuery} onCategory={setActiveCategory} onAdd={addToCart} onCart={() => setView('checkout')} onStatus={openOrderStatus} orders={data.orders} />}
       {view === 'checkout' && <Checkout cart={cart} storeOpen={data.settings.isOpen} onBack={() => setView('shop')} onUpdate={updateQuantity} onSubmit={submitOrder} />}
       {view === 'success' && selectedOrder && <Success order={selectedOrder} onStatus={() => setView('status')} onShop={() => setView('shop')} />}
@@ -116,6 +118,15 @@ function Header({ view, cartCount, onShop, onAdmin, onOrders, onCart }: { view: 
       <button className="owner-link" onClick={onAdmin}><Store size={16} /> <span>Area pemilik</span></button>
     </div>
   </header>
+}
+
+function MobileBottomNav({ view, cartCount, onShop, onOrders, onCart, onAdmin }: { view: View; cartCount: number; onShop: () => void; onOrders: () => void; onCart: () => void; onAdmin: () => void }) {
+  return <nav className="mobile-bottom-nav" aria-label="Navigasi mobile">
+    <button className={view === 'shop' ? 'active' : ''} onClick={onShop}><span className="mobile-nav-icon"><House size={18} /></span><span>Menu</span></button>
+    <button className={view === 'status' || view === 'success' ? 'active' : ''} onClick={onOrders}><span className="mobile-nav-icon"><ClipboardList size={18} /></span><span>Pesanan</span></button>
+    <button className={view === 'checkout' ? 'active' : ''} onClick={onCart}><span className="mobile-nav-icon nav-bag"><ShoppingBag size={18} />{cartCount > 0 && <b>{cartCount}</b>}</span><span>Keranjang</span></button>
+    <button className={view === 'admin' ? 'active' : ''} onClick={onAdmin}><span className="mobile-nav-icon"><Store size={18} /></span><span>Pemilik</span></button>
+  </nav>
 }
 
 function Shop({ menu, query, category, storeOpen, onQuery, onCategory, onAdd, onCart, onStatus, orders }: { menu: MenuItem[]; query: string; category: string; storeOpen: boolean; onQuery: (value: string) => void; onCategory: (value: string) => void; onAdd: (item: MenuItem) => void; onCart: () => void; onStatus: (order: Order) => void; orders: Order[] }) {
