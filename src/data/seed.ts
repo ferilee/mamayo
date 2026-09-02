@@ -1,0 +1,94 @@
+import type { MenuItem, Order, StoreSettings } from '../lib/ordering'
+
+export const seedMenu: MenuItem[] = [
+  {
+    id: 'nasi-goreng-rendang',
+    name: 'Nasi Goreng Rendang',
+    description: 'Nasi goreng wangi rempah dengan suwiran rendang sapi dan acar segar.',
+    price: 28000,
+    category: 'utama',
+    categoryLabel: 'Menu utama',
+    image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=900&q=85',
+    available: true,
+    popular: true,
+  },
+  {
+    id: 'ayam-geprek',
+    name: 'Ayam Geprek Sambal Ijo',
+    description: 'Ayam crispy, sambal cabai hijau, lalapan, dan nasi hangat.',
+    price: 24000,
+    category: 'utama',
+    categoryLabel: 'Menu utama',
+    image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=900&q=85',
+    available: true,
+    popular: true,
+  },
+  {
+    id: 'mie-nyemek',
+    name: 'Mie Nyemek Jawa',
+    description: 'Mie kenyal kuah nyemek dengan telur, ayam suwir, dan sayuran.',
+    price: 22000,
+    category: 'utama',
+    categoryLabel: 'Menu utama',
+    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=900&q=85',
+    available: true,
+  },
+  {
+    id: 'tahu-cabe-garam',
+    name: 'Tahu Cabe Garam',
+    description: 'Tahu lembut goreng garing dengan bawang putih dan cabe garam.',
+    price: 16000,
+    category: 'camilan',
+    categoryLabel: 'Camilan',
+    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?auto=format&fit=crop&w=900&q=85',
+    available: true,
+  },
+  {
+    id: 'es-teh-melati',
+    name: 'Es Teh Melati',
+    description: 'Teh melati dingin, manisnya pas, teman makan paling setia.',
+    price: 8000,
+    category: 'minuman',
+    categoryLabel: 'Minuman',
+    image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=900&q=85',
+    available: true,
+  },
+  {
+    id: 'es-jeruk-kunci',
+    name: 'Es Jeruk Kunci',
+    description: 'Perasan jeruk kunci segar dengan es batu dan sedikit madu.',
+    price: 12000,
+    category: 'minuman',
+    categoryLabel: 'Minuman',
+    image: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?auto=format&fit=crop&w=900&q=85',
+    available: true,
+  },
+]
+
+export const seedSettings: StoreSettings = {
+  isOpen: true,
+  hours: 'Setiap hari · 10.00–21.00',
+  address: 'Jl. Melati No. 12, Jakarta Selatan',
+  paymentAccount: 'BCA 1234 5678 a.n. Mamayo Kitchen',
+}
+
+export const seedOrders: Order[] = [
+  {
+    id: 'demo-order-1',
+    code: 'MY-0209-184',
+    createdAt: new Date(Date.now() - 28 * 60 * 1000).toISOString(),
+    customerName: 'Rani Putri',
+    whatsapp: '081234567890',
+    pickupTime: '12.30–13.00',
+    note: 'Sambalnya dipisah ya.',
+    items: [
+      { itemId: 'nasi-goreng-rendang', name: 'Nasi Goreng Rendang', price: 28000, quantity: 1 },
+      { itemId: 'es-teh-melati', name: 'Es Teh Melati', price: 8000, quantity: 1 },
+    ],
+    subtotal: 36000,
+    total: 36000,
+    paymentMethod: 'transfer',
+    paymentStatus: 'proof_submitted',
+    status: 'pending',
+  },
+]
