@@ -80,7 +80,7 @@ export const seedMenu: MenuItem[] = [
 export const seedSettings: StoreSettings = {
   isOpen: true,
   hours: 'Setiap hari · 10.00–21.00',
-  address: 'Jl. Melati No. 12, Jakarta Selatan',
+  address: 'Depan Koramil Candipuro, Lumajang',
   paymentAccount: 'BCA 1234 5678 a.n. Mamayo Kitchen',
 }
 

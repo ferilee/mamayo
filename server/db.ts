@@ -7,6 +7,7 @@ import { normalizeWhatsapp } from '../src/lib/ordering.js'
 import type { CreateOrderInput, MenuItem, MenuUpdateInput, Order, OrderStatus, PaymentStatus, StoreSettings } from '../src/lib/ordering.js'
 
 const databasePath = resolve(process.env.MAMAYO_DB_PATH ?? 'data/mamayo.sqlite')
+const legacyAddress = 'Jl. Melati No. 12, Jakarta Selatan'
 mkdirSync(dirname(databasePath), { recursive: true })
 
 export const db = new Database(databasePath)
@@ -99,6 +100,12 @@ const seedDatabase = () => {
   }
 }
 seedDatabase()
+
+export const migrateLegacySettings = () => {
+  db.prepare('UPDATE store_settings SET value = ? WHERE key = ? AND value = ?').run(seedSettings.address, 'address', legacyAddress)
+}
+
+migrateLegacySettings()
 
 export const getMenu = () => (db.prepare('SELECT * FROM menu_items ORDER BY popular DESC, id').all() as Record<string, unknown>[]).map(menuFromRow)
 

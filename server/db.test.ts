@@ -6,7 +6,7 @@ import { afterAll, expect, test } from 'vitest'
 
 process.env.MAMAYO_DB_PATH = join(mkdtempSync(join(tmpdir(), 'mamayo-menu-')), 'test.sqlite')
 
-const { db, getMenu, updateMenu } = await import('./db.js')
+const { db, getMenu, getSettings, migrateLegacySettings, updateMenu } = await import('./db.js')
 
 afterAll(() => db.close())
 
@@ -17,4 +17,11 @@ test('pemilik dapat memperbarui nama dan gambar menu', () => {
   expect(updated?.name).toBe('Nasi Goreng Uji')
   expect(updated?.image).toBe('/uploads/nasi-uji.jpg')
   expect(getMenu().find((item) => item.id === 'nasi-goreng-rendang')).toMatchObject(updates)
+})
+
+test('alamat lama dimigrasikan ke alamat baru tanpa menghapus pengaturan lain', () => {
+  db.prepare('UPDATE store_settings SET value = ? WHERE key = ?').run('Jl. Melati No. 12, Jakarta Selatan', 'address')
+  migrateLegacySettings()
+
+  expect(getSettings().address).toBe('Depan Koramil Candipuro, Lumajang')
 })
