@@ -21,6 +21,8 @@ Salin `.env.example` menjadi `.env`, lalu isi `TELEGRAM_BOT_TOKEN` dan `TELEGRAM
 
 Statistik penjualan hanya menghitung order berstatus selesai. Pelanggan unik dihitung dari nomor WhatsApp yang dinormalisasi; menu terlaris diurutkan berdasarkan jumlah porsi. Tema pertama kali mengikuti preferensi sistem dan dapat diubah melalui tombol matahari/bulan di header.
 
+Aplikasi juga menyediakan favicon, preview Open Graph untuk berbagi tautan, serta dukungan PWA. Pada build produksi, service worker mendaftarkan cache shell aplikasi dan tidak melakukan cache terhadap endpoint API.
+
 ## Pemeriksaan
 
 ```bash
