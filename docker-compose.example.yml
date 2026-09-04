@@ -1,0 +1,30 @@
+services:
+  app:
+    image: ghcr.io/ferilee/mamayo:latest
+    container_name: mamayo
+    ports:
+      - "2005:2005"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 2005
+      DATABASE_URL: /app/data/app.db
+
+      S3_ENDPOINT: http://global-storage:9000
+      S3_PUBLIC_BASE_URL: https://s3.gemastika.or.id
+      S3_BUCKET: websmakenpas-assets
+      S3_REGION: us-east-1
+      S3_FORCE_PATH_STYLE: "true"
+    volumes:
+      - sqlite_data:/app/data
+    networks:
+      - ferileenet
+    restart: always
+
+volumes:
+  sqlite_data:
+
+networks:
+  ferileenet:
+    external: true

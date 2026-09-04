@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { extname, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import cors from 'cors'
@@ -105,6 +105,17 @@ app.patch('/api/settings', (request, response) => {
   broadcast('settings-updated')
   return response.json(settings)
 })
+
+const clientDist = resolve('dist')
+if (existsSync(clientDist)) {
+  app.use(express.static(clientDist))
+  app.use((request, response, next) => {
+    if (request.method === 'GET' && !request.path.startsWith('/api/')) {
+      return response.sendFile(resolve(clientDist, 'index.html'))
+    }
+    return next()
+  })
+}
 
 app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
   if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') return response.status(400).json({ error: 'Ukuran gambar maksimal 5 MB.' })

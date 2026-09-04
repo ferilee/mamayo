@@ -6,7 +6,7 @@ import { seedMenu, seedOrders, seedSettings } from '../src/data/seed.js'
 import { normalizeWhatsapp } from '../src/lib/ordering.js'
 import type { CreateOrderInput, MenuItem, MenuUpdateInput, Order, OrderStatus, PaymentStatus, StoreSettings } from '../src/lib/ordering.js'
 
-const databasePath = resolve(process.env.MAMAYO_DB_PATH ?? 'data/mamayo.sqlite')
+const databasePath = resolve(process.env.DATABASE_URL ?? process.env.MAMAYO_DB_PATH ?? 'data/mamayo.sqlite')
 const legacyAddress = 'Jl. Melati No. 12, Jakarta Selatan'
 mkdirSync(dirname(databasePath), { recursive: true })
 
